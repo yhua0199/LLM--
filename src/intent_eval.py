@@ -4,7 +4,7 @@ from pathlib import Path
 # =========================
 # 0. 模型配置（保留）
 # =========================
-MODEL_TAG = "qwen2.5_1.5b"
+MODEL_TAG = "qwen2.5_7b"
 LABELS = ["法律类", "违规类", "闲聊类"]
 
 
