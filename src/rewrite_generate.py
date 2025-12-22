@@ -31,7 +31,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Model (use a valid HF repo id or local folder path)
-MODEL_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
+MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
 
 # Input
 INPUT_JSON = os.path.join(BASE_DIR, "data", "rewrite", "qa_testset_500.json")
@@ -42,7 +42,7 @@ PROMPT_PATH = os.path.join(BASE_DIR, "prompts", "rewrite.txt")
 
 # Output
 OUTPUT_DIR = os.path.join(BASE_DIR, "results", "rewrite")
-OUTPUT_FILE = "qwen2.5_1.5b_rewrite.jsonl"  # 按你要求也可改成 qwen3_0.5b_rewrite.jsonl
+OUTPUT_FILE = "qwen2.5_7b_rewrite.jsonl"  # 按你要求也可改成 qwen3_0.5b_rewrite.jsonl
 
 # Generation params
 MAX_NEW_TOKENS = 100
