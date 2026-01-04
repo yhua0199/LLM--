@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from common.paths import results_path
+
 # =========================
 # 0. 模型配置（保留）
 # =========================
@@ -11,16 +13,12 @@ LABELS = ["法律类", "违规类", "闲聊类"]
 # =========================
 # 1. 路径工具
 # =========================
-def project_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+def pred_file_path() -> Path:
+    return results_path("intent", f"intent_pred_{MODEL_TAG}.jsonl")
 
 
-def pred_file_path(root: Path) -> Path:
-    return root / "results" / "intent" / f"intent_pred_{MODEL_TAG}.jsonl"
-
-
-def metrics_file_path(root: Path) -> Path:
-    return root / "results" / "intent" / f"metrics_{MODEL_TAG}.json"
+def metrics_file_path() -> Path:
+    return results_path("intent", f"metrics_{MODEL_TAG}.json")
 
 
 # =========================
@@ -43,8 +41,7 @@ def safe_div(a, b):
 # 3. 主评测逻辑（修改为 Macro 指标）
 # =========================
 def main():
-    root = project_root()
-    pred_path = pred_file_path(root)
+    pred_path = pred_file_path()
     if not pred_path.exists():
         raise FileNotFoundError(f"Prediction file not found: {pred_path}")
 
@@ -112,7 +109,7 @@ def main():
         print(f"  {lab}: Recall={m['Recall']:.4f}, F1={m['F1']:.4f}")
 
     # ---------- save ----------
-    out_path = metrics_file_path(root)
+    out_path = metrics_file_path()
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump({
             "model_tag": MODEL_TAG,

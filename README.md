@@ -23,7 +23,7 @@
 
 ### 1. 意图识别数据集
 
-- 数据路径：`data/intent/raw/intent_2k.json`
+- 数据路径：`experiments/exp1/data/intent/raw/intent_2k.json`
 - 数据规模：2000 条
 - 数据来源：基于人工设计与大模型生成的中文用户问题
 
@@ -38,7 +38,7 @@
 
 ### 2. Query 改写测试数据集
 
-- 数据路径：`data/rewrite/qa_testset_500.json`
+- 数据路径：`experiments/exp1/data/rewrite/qa_testset_500.json`
 - 数据规模：500 条
 - 数据构成：
   - 200 条来自已有法律问答数据
@@ -118,22 +118,35 @@ Query 改写任务不进行自动化打分，仅对改写结果进行人工观�
 双模型方案下，不同模型规模的意图识别评估结果保存在：
 
 ```text
-results/intent/
+experiments/exp1/results/intent/
 ├── metrics_qwen2.5_0.5b.json
 ├── metrics_qwen2.5_1.5b.json
 ├── metrics_qwen2.5_3b.json
 └── metrics_qwen2.5_7b.json
-
-
-exp1_intent_rewrite/
-├── data/
-│   ├── intent/
-│   └── rewrite/
-├── prompts/
-├── results/
-│   ├── intent/
-│   └── rewrite/
-├── src/
-└── README.md
 ```
 
+## 目录结构与扩展方式
+
+为支持后续实验（exp2/exp3 等），目录统一为实验维度管理，默认使用 `exp1`：
+
+```text
+experiments/
+├── exp1/
+│   ├── data/
+│   ├── prompts/
+│   └── results/
+└── exp2/
+    ├── data/
+    ├── prompts/
+    └── results/
+src/
+```
+
+### 运行路径与配置约定
+
+- 默认实验目录：`experiments/exp1`
+- 指定实验目录：
+  - `LLM_EXPERIMENT=exp2 python src/intent_infer.py`
+  - 或直接指定路径：`LLM_EXPERIMENT_ROOT=/abs/path/to/experiments/exp2 python src/intent_infer.py`
+
+所有脚本通过统一的路径配置读取 `data / prompts / results`，因此在不同设备或云端运行时只需要切换环境变量即可。

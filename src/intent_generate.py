@@ -1,16 +1,14 @@
 import json
 import random
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
+
+from common.paths import data_path
 
 # 目标分布
 TARGET = {"法律类": 1200, "违规类": 400, "闲聊类": 400}
 # raw 文件命名规则（jsonl）
 PATTERN = {"法律类": "law_*.jsonl", "违规类": "violate_*.jsonl", "闲聊类": "chat_*.jsonl"}
-
-def root_dir() -> Path:
-    # 本脚本在 <root>/src/ 下：root = 当前文件往上两级（src -> root）
-    return Path(__file__).resolve().parents[1]
 
 def read_jsonl(files, label):
     """读取 jsonl（不去重）。只保留字段齐全且类型匹配的样本。"""
@@ -32,9 +30,8 @@ def read_jsonl(files, label):
     return rows
 
 def main():
-    root = root_dir()
-    raw = root / "data" / "intent" / "raw"
-    out = root / "data" / "intent" / "intent_2k.json"
+    raw = data_path("intent", "raw")
+    out = data_path("intent", "intent_2k.json")
 
     print(f"[INFO] raw dir: {raw}")
 

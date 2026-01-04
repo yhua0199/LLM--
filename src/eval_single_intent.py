@@ -6,31 +6,29 @@ eval_single_model_intent.py
 - 读取单模型融合输出（jsonl）：每行形如
   {"原始问题":"...","改写问题":"...","预测类型":"...","真实类型":"..."}
 - 只评估意图分类：预测类型 vs 真实类型
-- 输出指标到 results/intent/metrics_qwen2.5_1.5b_single.json
+- 输出指标到 experiments/<exp>/results/intent/metrics_qwen2.5_1.5b_single.json
 
 不依赖 sklearn（纯标准库）
 """
 
-import os
 import json
+from pathlib import Path
 from typing import Dict, List, Tuple
+
+from common.paths import results_path
 
 # =========================
 # 0) 配置区（全部放前面）
 # =========================
 
 
-# ===== 强制把工作目录切到项目根目录 =====
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-os.chdir(BASE_DIR)
-
 # ===== 单模型预测结果（你红框的那个文件）=====
-PRED_PATH = "results/rewrite/qwen2.5_1.5b_intent_rewrite.jsonl"
+PRED_PATH = results_path("rewrite", "qwen2.5_1.5b_intent_rewrite.jsonl")
 
 # ===== 输出到 intent 目录 =====
-OUT_DIR = "results/intent"
+OUT_DIR = results_path("intent")
 OUT_FILE = "metrics_qwen2.5_1.5b_single.json"
-OUT_PATH = os.path.join(OUT_DIR, OUT_FILE)
+OUT_PATH = OUT_DIR / OUT_FILE
 
 MODEL_TAG = "qwen2.5_1.5b"
 
@@ -62,8 +60,8 @@ EMPTY_PRED_AS_CHAT = True
 # 1) 工具函数
 # =========================
 
-def safe_mkdir(path: str) -> None:
-    os.makedirs(path, exist_ok=True)
+def safe_mkdir(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
 
 
 def normalize_label(x: str) -> str:
@@ -78,11 +76,11 @@ def normalize_label(x: str) -> str:
     return s
 
 
-def load_pairs(pred_path: str) -> Tuple[List[str], List[str], int]:
+def load_pairs(pred_path: Path) -> Tuple[List[str], List[str], int]:
     """读取 y_true, y_pred"""
     y_true, y_pred = [], []
     total = 0
-    with open(pred_path, "r", encoding="utf-8") as f:
+    with pred_path.open("r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -175,7 +173,7 @@ def main():
     safe_mkdir(OUT_DIR)
 
     # 输出为一个 JSON 对象（你要求的格式）
-    with open(OUT_PATH, "w", encoding="utf-8") as f:
+    with OUT_PATH.open("w", encoding="utf-8") as f:
         f.write(json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
 
     print(f"[DONE] Read {total_lines} lines.")

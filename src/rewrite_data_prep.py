@@ -6,8 +6,10 @@
 
 
 import json
-import random
 import os
+import random
+
+from common.paths import data_path
 
 
 def sample_rewrite_data(input_file, output_file, sample_count=200):
@@ -65,15 +67,10 @@ def sample_rewrite_data(input_file, output_file, sample_count=200):
 
 if __name__ == "__main__":
     # 获取当前脚本文件所在的绝对路径
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    # 定位到项目根目录 (src 的上一级)
-    project_root = os.path.dirname(current_dir)
-
-    # 使用绝对路径拼接，避免找不到文件
-    RAW_PATH = os.path.join(project_root, "data", "rewrite", "raw", "qa_corpus.json")
-    OUTPUT_PATH = os.path.join(project_root, "data", "rewrite", "rewrite_200_base.json")
+    raw_path = data_path("rewrite", "raw", "qa_corpus.json")
+    output_path = data_path("rewrite", "rewrite_200_base.json")
 
     print(f"当前工作目录: {os.getcwd()}")  # 打印出来确认一下
-    print(f"尝试读取路径: {RAW_PATH}")
+    print(f"尝试读取路径: {raw_path}")
 
-    sample_rewrite_data(RAW_PATH, OUTPUT_PATH, sample_count=250)
+    sample_rewrite_data(str(raw_path), str(output_path), sample_count=250)

@@ -13,8 +13,8 @@ intent_infer.py
 
 功能：
 - 使用 Qwen2.5-0.5B-Instruct 模型进行【意图识别】推理
-- 输入：data/intent/intent_2k.json
-- 输出：results/intent/intent_pred_qwen2.5_0.5b.jsonl
+- 输入：experiments/<exp>/data/intent/intent_2k.json
+- 输出：experiments/<exp>/results/intent/intent_pred_qwen2.5_0.5b.jsonl
 
 说明：
 - 这是【推理脚本】，不是训练脚本
@@ -28,6 +28,8 @@ from pathlib import Path
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+
+from common.paths import data_path, ensure_dir, prompt_path, results_path
 
 
 # =========================
@@ -49,19 +51,6 @@ SAMPLE_EVERY = 400       # 每200条打印一次样例
 SHOW_SAMPLES = 3         # 每次打印样例条数
 DEBUG_FIRST_N = 20       # 前N条详细打印（sanity check）
 WARN_UNKNOWN_RATE = 0.30 # UNKNOWN占比超过30%就报警
-
-
-# =========================
-# 2. 路径相关工具函数
-# =========================
-
-def project_root() -> Path:
-    """
-    返回项目根目录路径。
-    当前文件位置：<root>/src/intent_infer.py
-    parents[1] 即为 <root>
-    """
-    return Path(__file__).resolve().parents[1]
 
 
 # =========================
@@ -159,23 +148,22 @@ def infer_one(model, tokenizer, prompt: str) -> str:
 # =========================
 
 def main():
-    root = project_root()
-    data_path = root / "data" / "intent" / "intent_2k.json"
-    prompt_path = root / "prompts" / "intent_infer.txt"
-    out_dir = root / "results" / "intent"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    data_file = data_path("intent", "intent_2k.json")
+    prompt_file = prompt_path("intent_infer.txt")
+    out_dir = results_path("intent")
+    ensure_dir(out_dir)
     out_file = out_dir / f"intent_pred_{MODEL_TAG}.jsonl"
 
     print(f"[INFO] Model : {MODEL_ID}")
-    print(f"[INFO] Data  : {data_path}")
-    print(f"[INFO] Prompt: {prompt_path}")
+    print(f"[INFO] Data  : {data_file}")
+    print(f"[INFO] Prompt: {prompt_file}")
     print(f"[INFO] Output: {out_file}")
 
     # ---------- 加载数据 ----------
-    data = json.loads(data_path.read_text(encoding="utf-8"))
+    data = json.loads(data_file.read_text(encoding="utf-8"))
 
     # ---------- 加载 Prompt ----------
-    prompt_tpl = load_prompt(prompt_path)
+    prompt_tpl = load_prompt(prompt_file)
 
     # ---------- 加载模型 ----------
     tokenizer = AutoTokenizer.from_pretrained(

@@ -3,21 +3,24 @@
 single_model_infer.py
 
 单模型：意图识别 + Query 改写（融合推理）
-输入：data/intent/raw/intent_2k.json 中的 "问题"
+输入：experiments/<exp>/data/intent/intent_2k.json 中的 "问题"
 输出：模型返回 JSON：{"intent":"","rewrite_query":""}
-保存：results/rewrite/qwen2.5_3b_intent_rewrite.jsonl
+保存：experiments/<exp>/results/rewrite/qwen2.5_3b_intent_rewrite.jsonl
 每 20 条打印一次进度 + 样例
 所有配置集中在文件最前面
 """
 
+import json
 import os
 import re
-import json
 import time
-from typing import Dict, Any, Optional
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+
+from common.paths import data_path, ensure_dir, prompt_path, results_path
 
 
 # =========================
@@ -25,12 +28,12 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 # =========================
 
 # 路径配置
-DATA_PATH = "data/intent/intent_2k.json"
-PROMPT_PATH = "prompts/intent_rewrite_infer.txt"
+DATA_PATH = data_path("intent", "intent_2k.json")
+PROMPT_PATH = prompt_path("intent_rewrite_infer.txt")
 
-OUT_DIR = "results/rewrite"
+OUT_DIR = results_path("rewrite")
 OUT_FILE = "qwen2.5_1.5b_intent_rewrite.jsonl"  # 你指定的命名
-OUT_PATH = os.path.join(OUT_DIR, OUT_FILE)
+OUT_PATH = OUT_DIR / OUT_FILE
 
 # 模型配置（你可按需改，但文件名固定为 qwen2.5_3b_intent_rewrite.jsonl）
 MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"
@@ -56,12 +59,12 @@ JSON_PARSE_RETRY = 2
 # 1) 工具函数
 # =========================
 
-def safe_mkdir(path: str) -> None:
-    os.makedirs(path, exist_ok=True)
+def safe_mkdir(path: Path) -> None:
+    ensure_dir(path)
 
 
-def load_prompt(path: str) -> str:
-    with open(path, "r", encoding="utf-8") as f:
+def load_prompt(path: Path) -> str:
+    with path.open("r", encoding="utf-8") as f:
         return f.read()
 
 
@@ -141,7 +144,7 @@ def main():
     prompt_tmpl = load_prompt(PROMPT_PATH)
 
     # 读数据
-    with open(DATA_PATH, "r", encoding="utf-8") as f:
+    with DATA_PATH.open("r", encoding="utf-8") as f:
         data = json.load(f)
 
     if not isinstance(data, list):
@@ -166,7 +169,7 @@ def main():
     t0 = time.time()
     written = 0
 
-    with open(OUT_PATH, "w", encoding="utf-8") as w:
+    with OUT_PATH.open("w", encoding="utf-8") as w:
         for idx, sample in enumerate(data, start=1):
             query = sample.get("问题", "")
             gt_type = sample.get("类型", "")

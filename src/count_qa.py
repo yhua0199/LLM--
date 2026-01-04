@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Merge:
-- data/rewrite/synth/self_instruct_qa_300.json
-- data/rewrite/rewrite_200_base.json
+- experiments/<exp>/data/rewrite/synth/self_instruct_qa_300.json
+- experiments/<exp>/data/rewrite/rewrite_200_base.json
 into:
-- data/rewrite/qa_testset_500.json
+- experiments/<exp>/data/rewrite/qa_testset_500.json
 
 Then shuffle the merged dataset.
 """
@@ -12,7 +12,9 @@ Then shuffle the merged dataset.
 import json
 import random
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List
+
+from common.paths import data_path, ensure_dir
 
 
 RANDOM_SEED = 42   # 固定 seed，保证实验可复现
@@ -36,11 +38,9 @@ def load_json_list(path: Path) -> List[Dict]:
 
 
 def main():
-    root = Path(__file__).resolve().parent.parent
-
-    gen_300_path = root / "data" / "rewrite" / "synth" / "self_instruct_qa_300.json"
-    base_200_path = root / "data" / "rewrite" / "rewrite_200_base.json"
-    out_path = root / "data" / "rewrite" / "qa_testset_500.json"
+    gen_300_path = data_path("rewrite", "synth", "self_instruct_qa_300.json")
+    base_200_path = data_path("rewrite", "rewrite_200_base.json")
+    out_path = data_path("rewrite", "qa_testset_500.json")
 
     gen_300 = load_json_list(gen_300_path)
     base_200 = load_json_list(base_200_path)
@@ -60,7 +60,7 @@ def main():
     random.seed(RANDOM_SEED)
     random.shuffle(merged)
 
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    ensure_dir(out_path.parent)
     out_path.write_text(
         json.dumps(merged, ensure_ascii=False, indent=2),
         encoding="utf-8"
@@ -72,4 +72,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -1,11 +1,9 @@
 import json
-from pathlib import Path
 
-# 项目根目录 = src 的上一级
-ROOT_DIR = Path(__file__).resolve().parent.parent
+from common.paths import data_path
 
-input_path = ROOT_DIR / "data" / "rewrite" / "seed" / "article.txt"
-output_path = ROOT_DIR / "data" / "rewrite" / "seed" / "law_articles.json"
+input_path = data_path("rewrite", "seed", "article.txt")
+output_path = data_path("rewrite", "seed", "law_articles.json")
 
 records = []
 
@@ -34,4 +32,3 @@ with open(output_path, "w", encoding="utf-8") as f:
 
 print(f"转换完成，共 {len(records)} 条")
 print(f"输出路径：{output_path}")
-
