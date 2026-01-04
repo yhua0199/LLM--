@@ -14,34 +14,34 @@ rewrite_generate.py
 - Use Qwen Instruct model to rewrite queries
 - Save ONLY final outputs to results/rewrite/*.jsonl
 
-Directory (your screenshot):
-exp1_intent_rewrite/
+Directory (current layout):
+experiments/exp1/
   data/rewrite/qa_testset_500.json
   data/rewrite/rewrite_200_base.json
   prompts/rewrite.txt
   results/rewrite/
-  src/rewrite_generate.py
+src/rewrite_generate.py
 """
 
 # =========================
 # ====== CONFIG ==========
 # =========================
-import os
+from pathlib import Path
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from common.paths import data_path, ensure_dir, prompt_path, results_path
 
 # Model (use a valid HF repo id or local folder path)
 MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
 
 # Input
-INPUT_JSON = os.path.join(BASE_DIR, "data", "rewrite", "qa_testset_500.json")
-# INPUT_JSON = os.path.join(BASE_DIR, "data", "rewrite", "rewrite_200_base.json")
+INPUT_JSON = data_path("rewrite", "qa_testset_500.json")
+# INPUT_JSON = data_path("rewrite", "rewrite_200_base.json")
 
 # Prompt
-PROMPT_PATH = os.path.join(BASE_DIR, "prompts", "rewrite.txt")
+PROMPT_PATH = prompt_path("rewrite.txt")
 
 # Output
-OUTPUT_DIR = os.path.join(BASE_DIR, "results", "rewrite")
+OUTPUT_DIR = results_path("rewrite")
 OUTPUT_FILE = "qwen2.5_7b_rewrite.jsonl"  # 按你要求也可改成 qwen3_0.5b_rewrite.jsonl
 
 # Generation params
@@ -59,7 +59,7 @@ FAIL_SAVE_EMPTY = True   # 解析失败时仍保存 {"原始问题":..., "改写
 # ====== IMPORTS =========
 # =========================
 import json
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -68,17 +68,17 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 # ====== UTILS ===========
 # =========================
 
-def ensure_dir(path: str) -> None:
-    os.makedirs(path, exist_ok=True)
+def ensure_dir_path(path: Path) -> None:
+    ensure_dir(path)
 
 
-def load_json(path: str) -> Any:
-    with open(path, "r", encoding="utf-8") as f:
+def load_json(path: Path) -> Any:
+    with path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def load_text(path: str) -> str:
-    with open(path, "r", encoding="utf-8") as f:
+def load_text(path: Path) -> str:
+    with path.open("r", encoding="utf-8") as f:
         return f.read().strip()
 
 
@@ -114,7 +114,7 @@ def extract_query(item: Any) -> Optional[str]:
 def build_chat_input(tokenizer, rewrite_prompt: str, query: str) -> str:
     """
     使用 Qwen chat template
-    rewrite_prompt 是你 prompts/rewrite.txt 的内容
+    rewrite_prompt 是 experiments/<exp>/prompts/rewrite.txt 的内容
     """
     messages = [
         {"role": "system", "content": "你是一个严谨的中文法律问题改写系统。"},
@@ -216,7 +216,6 @@ def normalize_dataset(data: Any) -> List[Any]:
 
 def main():
     # ---- path checks
-    print("[INFO] BASE_DIR    =", BASE_DIR)
     print("[INFO] INPUT_JSON  =", INPUT_JSON)
     print("[INFO] PROMPT_PATH =", PROMPT_PATH)
     print("[INFO] OUTPUT_DIR  =", OUTPUT_DIR)
@@ -226,8 +225,8 @@ def main():
     if not os.path.exists(PROMPT_PATH):
         raise FileNotFoundError(f"Prompt not found: {PROMPT_PATH}")
 
-    ensure_dir(OUTPUT_DIR)
-    out_path = os.path.join(OUTPUT_DIR, OUTPUT_FILE)
+    ensure_dir_path(OUTPUT_DIR)
+    out_path = OUTPUT_DIR / OUTPUT_FILE
 
     # ---- device
     device = DEVICE

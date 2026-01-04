@@ -4,7 +4,7 @@ Self-instruct generation of legal QA pairs (query, answer)
 Grounded on law_articles.json
 
 Output:
-  data/rewrite/synth/self_instruct_qa_300.jsonl
+  experiments/<exp>/data/rewrite/synth/self_instruct_qa_300.jsonl
 """
 
 # -*- coding: utf-8 -*-
@@ -13,7 +13,7 @@ Self-instruct generation of legal QA pairs (query, answer)
 Grounded on law_articles.json
 
 Output:
-  data/rewrite/synth/self_instruct_qa_300.jsonl
+  experiments/<exp>/data/rewrite/synth/self_instruct_qa_300.jsonl
 """
 
 # =========================================================
@@ -48,17 +48,16 @@ from typing import Dict, Optional
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
+from common.paths import data_path, ensure_dir as ensure_dir_path, prompt_path
 
 # =========================================================
 # ===================== 2. 路径配置 ========================
 # =========================================================
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+LAW_PATH = data_path("rewrite", "seed", "law_articles.json")
+PROMPT_PATH = prompt_path("rewrite_self_instruct_qa.txt")
 
-LAW_PATH = ROOT_DIR / "data" / "rewrite" / "seed" / "law_articles.json"
-PROMPT_PATH = ROOT_DIR / "prompts" / "rewrite_self_instruct_qa.txt"
-
-OUT_DIR = ROOT_DIR / "data" / "rewrite" / "synth"
+OUT_DIR = data_path("rewrite", "synth")
 OUT_PATH = OUT_DIR / "self_instruct_qa_300.jsonl"
 
 
@@ -73,9 +72,6 @@ def load_json(path: Path):
 def load_text(path: Path) -> str:
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
-
-def ensure_dir(path: Path):
-    path.mkdir(parents=True, exist_ok=True)
 
 def render_prompt(template: str, law_title: str, law_content: str) -> str:
     return (
@@ -131,7 +127,7 @@ def main():
     print("=" * 60)
 
     random.seed(RANDOM_SEED)
-    ensure_dir(OUT_DIR)
+    ensure_dir_path(OUT_DIR)
 
     law_articles = load_json(LAW_PATH)
     prompt_template = load_text(PROMPT_PATH)
@@ -229,4 +225,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
