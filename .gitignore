@@ -1,0 +1,17 @@
+# IDE
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+
+# Local env
+.env
+.venv/
+venv/
+
+# HF / model cache (如果你有)
+hf_cache/

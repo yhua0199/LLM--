@@ -1,0 +1,19 @@
+{
+  "provider": "openai",
+  "pred_file": "answer_qwen2.5_3b.json",
+  "pred_tag": "qwen2.5_3b",
+  "judge_model": "gpt-4o-mini",
+  "judge_tag": "gpt-4o-mini",
+  "num_samples": 500,
+  "num_valid_labels": 500,
+  "num_label_1": 390,
+  "num_parse_fail": 0,
+  "num_api_fail": 0,
+  "accuracy_consistency": 0.78,
+  "time_sec": 775.5016529560089,
+  "api_params": {
+    "temperature": 0.0,
+    "max_tokens": 8,
+    "max_retries": 6
+  }
+}
