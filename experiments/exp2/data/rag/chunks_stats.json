@@ -1,0 +1,12 @@
+{
+  "chunk_size": 600,
+  "chunk_overlap": 50,
+  "split_by_article": true,
+  "min_chunk_len": 60,
+  "input_docs": 286,
+  "article_pieces": 23128,
+  "output_chunks": 16495,
+  "filtered_too_short": 6690,
+  "in_file": "D:/PythonProject/LLM/experiments/exp2/data/rag/corpus.jsonl",
+  "out_file": "D:/PythonProject/LLM/experiments/exp2/data/rag/chunks.jsonl"
+}

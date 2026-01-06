@@ -1,0 +1,12 @@
+{
+  "experiment_root": "D:/PythonProject/LLM/experiments/exp2",
+  "law_root": "D:/PythonProject/LLM/experiments/exp2/data/law_book",
+  "input_md_files": 288,
+  "output_docs": 286,
+  "skipped_too_short": 0,
+  "deduped_by_text_hash": 2,
+  "min_len": 414,
+  "max_len": 112976,
+  "avg_len": 8892.335664335664,
+  "out_file": "D:/PythonProject/LLM/experiments/exp2/data/rag/corpus.jsonl"
+}
