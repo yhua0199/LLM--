@@ -59,7 +59,7 @@ CHUNK_SIZE = int(os.getenv("RAG_CHUNK_SIZE", "600"))
 CHUNK_OVERLAP = int(os.getenv("RAG_CHUNK_OVERLAP", "50"))
 
 SPLIT_BY_ARTICLE = os.getenv("RAG_SPLIT_BY_ARTICLE", "1") == "1"
-MIN_CHUNK_LEN = int(os.getenv("RAG_MIN_CHUNK_LEN", "60"))
+MIN_CHUNK_LEN = int(os.getenv("RAG_MIN_CHUNK_LEN", "10"))
 
 
 # =========================
