@@ -124,12 +124,14 @@ LLM_DO_SAMPLE = os.getenv("LLM_DO_SAMPLE", "1") == "1"
 RAG_PROMPT_FILE = os.getenv("RAG_PROMPT_FILE", "rag_qa.txt")
 
 DEFAULT_RAG_PROMPT = """你是一名法律咨询助手。
+你的任务是：
+针对用户提出的法律相关问题，参考提供的参考资料，提供法律原则说明和建议。
 
 要求：
-1) 仅基于给定的“参考资料（contexts）”与常识性的法律原则进行解释，不编造不存在的法条细节。
-2) 不输出违法/危险行为的具体操作步骤。
-3) 若参考资料不足以支持结论，请明确说明“信息不足”，并给出需要补充的信息点。
-4) 输出简洁清晰，结构建议：结论/原则 + 依据（引用资料要点） + 建议。
+1) 必须优先依据“参考资料（contexts）”回答。
+2) 简明解释法律原则、制度，然后给出常见处理思路，不要编造具体事实。
+3) 回答结构：法律来源 + 解释法律与事实分析 + 处理建议。
+4) 保持回答简明，不超过150词
 
 【用户问题】
 {query}
@@ -143,8 +145,8 @@ DEFAULT_RAG_PROMPT = """你是一名法律咨询助手。
 # -------------------------
 # 日志/进度
 # -------------------------
-LOG_EVERY = int(os.getenv("LOG_EVERY", "10"))
-PREVIEW_EVERY = int(os.getenv("PREVIEW_EVERY", "20"))
+LOG_EVERY = int(os.getenv("LOG_EVERY", "1"))
+PREVIEW_EVERY = int(os.getenv("PREVIEW_EVERY", "10"))
 PREVIEW_CHARS = int(os.getenv("PREVIEW_CHARS", "220"))
 
 
