@@ -1,0 +1,21 @@
+{
+  "task": "rag_consistency_eval",
+  "provider": "openai",
+  "pred_file": "experiments\\exp2\\results\\rag\\answer_rag_rewrite_Qwen2.5-3B-Instruct_bm10_bg10_rrf20_ctx10.json",
+  "pred_tag": "rag_rewrite_Qwen2.5-3B-Instruct_bm10_bg10_rrf20_ctx10",
+  "judge_model": "gpt-4o-mini",
+  "judge_tag": "gpt-4o-mini",
+  "num_samples": 50,
+  "num_valid_labels": 50,
+  "num_label_1": 41,
+  "num_parse_fail": 0,
+  "num_api_fail": 0,
+  "accuracy_consistency": 0.82,
+  "time_sec": 38.044416427612305,
+  "api_params": {
+    "temperature": 0.0,
+    "max_tokens": 8,
+    "max_retries": 6
+  },
+  "output_dir": "D:\\PythonProject\\LLM\\experiments\\exp2\\results\\rag_eval"
+}
