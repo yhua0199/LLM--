@@ -11,7 +11,7 @@
   "num_parse_fail": 0,
   "num_api_fail": 0,
   "accuracy_consistency": 0.86,
-  "time_sec": 29.74132537841797,
+  "time_sec": 40.02382850646973,
   "api_params": {
     "temperature": 0.0,
     "max_tokens": 8,
