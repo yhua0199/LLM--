@@ -1,58 +1,50 @@
-# src/exp2/es/index_bge.py
+# src/exp2/es/index_bm25.py
+# -*- coding: utf-8 -*-
 """
-【功能】用 BGE / BGE-large 构建 ES 向量索引（dense_vector）
+【功能】构建 ES BM25（稀疏检索）索引
 输入：experiments/<exp>/data/rag/chunks.jsonl
-输出：ES index（law_bge / law_bge_large）
+输出：ES index（law_bm25）
 
-运行：
-  $env:LLM_EXPERIMENT="exp2"
-  $env:ES_URL="http://127.0.0.1:9200"
-  python -m src.exp2.es.index_bge
+运行（Linux / DSW）：
+  export LLM_EXPERIMENT=exp2
+  export ES_URL=http://127.0.0.1:9200
+  export ES_BM25_INDEX=law_bm25
+  export ES_RECREATE=1   # 首次建议 1，后续增量可设 0
+  python -m src.exp2.es.index_bm25
 
 可选配置：
-  $env:RAG_CHUNKS_FILE="rag/chunks.jsonl"     # 相对 experiments/<exp>/data 的路径
-  $env:ES_BGE_INDEX="law_bge"
-  $env:ES_BGE_LARGE_INDEX="law_bge_large"
-  $env:BGE_MODEL="BAAI/bge-base-zh-v1.5"
-  $env:BGE_LARGE_MODEL="BAAI/bge-large-zh-v1.5"
-  $env:INDEX_MODEL="bge"                     # bge / bge_large
-  $env:EMB_BATCH_SIZE="32"
-  $env:ES_BULK_SIZE="500"
-  $env:ES_RECREATE="0"                       # 1=删除并重建索引（谨慎）
-  $env:EMB_DEVICE="auto"                     # auto / cpu / cuda / cuda:0
+  export RAG_CHUNKS_FILE="rag/chunks.jsonl"   # 相对 experiments/<exp>/data 的路径
+  export ES_BULK_SIZE="500"
 """
 
 from __future__ import annotations
 
+# =========================================================
+# 0) 【必须】先确保 LLM_EXPERIMENT 在 import paths 前已就位
+# =========================================================
 import os
+os.environ.setdefault("LLM_EXPERIMENT", os.getenv("LLM_EXPERIMENT", "exp2"))
+
 import json
 from typing import Any, Dict, Iterable, List
 
 from tqdm import tqdm
 from elasticsearch import Elasticsearch, helpers
-from sentence_transformers import SentenceTransformer
 
 from src.common.paths import data_path
 
-# ---------- Config ----------
-ES_URL = os.getenv("ES_URL", "http://127.0.0.1:9200")
-CHUNKS_FILE = os.getenv("RAG_CHUNKS_FILE", "rag/chunks.jsonl")
+# =========================================================
+# Config
+# =========================================================
+ES_URL = os.getenv("ES_URL", "http://127.0.0.1:9200").strip()
 
-BGE_MODEL = os.getenv("BGE_MODEL", "BAAI/bge-base-zh-v1.5")
-BGE_LARGE_MODEL = os.getenv("BGE_LARGE_MODEL", "BAAI/bge-large-zh-v1.5")
+CHUNKS_FILE = os.getenv("RAG_CHUNKS_FILE", "rag/chunks.jsonl").strip()
 
-ES_BGE_INDEX = os.getenv("ES_BGE_INDEX", "law_bge")
-ES_BGE_LARGE_INDEX = os.getenv("ES_BGE_LARGE_INDEX", "law_bge_large")
+BM25_INDEX = os.getenv("ES_BM25_INDEX", os.getenv("ES_BM25_INDEX", "law_bm25")).strip()
+# 兼容你有时写的 ES_RECREATE / ES_BM25_RECREATE
+RECREATE = (os.getenv("ES_RECREATE", "0") == "1") or (os.getenv("ES_BM25_RECREATE", "0") == "1")
 
-# 选择要建哪个索引：bge / bge_large
-INDEX_MODEL = os.getenv("INDEX_MODEL", "bge").strip().lower()
-
-EMB_BATCH_SIZE = int(os.getenv("EMB_BATCH_SIZE", "32"))
 ES_BULK_SIZE = int(os.getenv("ES_BULK_SIZE", "500"))
-RECREATE = os.getenv("ES_RECREATE", "0") == "1"
-
-# 设备选择：auto / cpu / cuda / cuda:0
-EMB_DEVICE = os.getenv("EMB_DEVICE", "auto").strip().lower()
 
 
 def read_jsonl(path) -> Iterable[Dict[str, Any]]:
@@ -64,24 +56,26 @@ def read_jsonl(path) -> Iterable[Dict[str, Any]]:
             yield json.loads(line)
 
 
-def pick_model_and_index() -> tuple[str, str, int]:
-    """返回：(model_name, index_name, dims)"""
-    if INDEX_MODEL in ("bge_large", "bge-large", "large"):
-        return BGE_LARGE_MODEL, ES_BGE_LARGE_INDEX, 1024
-    return BGE_MODEL, ES_BGE_INDEX, 768
-
-
-def create_index(es: Elasticsearch, index_name: str, dims: int) -> None:
-    """创建向量索引 mapping（dense_vector + cosine）"""
+def create_index(es: Elasticsearch, index_name: str) -> None:
+    """
+    创建 BM25 索引 mapping
+    - text: 用于 match 查询
+    - 其余字段用于追溯/展示
+    """
     if es.indices.exists(index=index_name):
         if RECREATE:
             es.indices.delete(index=index_name)
-            print(f"[index_bge] deleted existing index={index_name}")
+            print(f"[index_bm25] deleted existing index={index_name}")
         else:
-            print(f"[index_bge] index 已存在，跳过创建：{index_name}")
+            print(f"[index_bm25] index already exists, skip create: {index_name}")
             return
 
     mapping = {
+        "settings": {
+            # 可以按需扩展 analyzer；默认 standard 也能跑
+            "number_of_shards": 1,
+            "number_of_replicas": 0,
+        },
         "mappings": {
             "properties": {
                 "chunk_id": {"type": "keyword"},
@@ -90,160 +84,102 @@ def create_index(es: Elasticsearch, index_name: str, dims: int) -> None:
                 "law_group": {"type": "keyword"},
                 "rel_path": {"type": "keyword"},
                 "source": {"type": "text"},
-                "text": {"type": "text"},
+                "text": {"type": "text"},        # BM25 检索主字段
                 "text_len": {"type": "integer"},
-                # 向量字段：用于 knn
-                "vector": {
-                    "type": "dense_vector",
-                    "dims": dims,
-                    "index": True,
-                    "similarity": "cosine"
-                },
             }
-        }
+        },
     }
     es.indices.create(index=index_name, **mapping)
-    print(f"[index_bge] created index={index_name}, dims={dims}")
+    print(f"[index_bm25] created index={index_name}")
 
 
 def bulk_actions(index_name: str, rows: List[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
     for r in rows:
+        chunk_id = r.get("chunk_id")
+        if not chunk_id:
+            continue
         yield {
             "_op_type": "index",
             "_index": index_name,
-            "_id": r["chunk_id"],   # 用 chunk_id 做主键，方便覆盖/去重
+            "_id": chunk_id,     # 用 chunk_id 做主键，重复跑会覆盖
             "_source": r,
         }
 
 
-def pick_device_for_sentence_transformers() -> str:
-    """
-    决定 embedding 用什么设备：
-    - EMB_DEVICE=cpu/cuda/cuda:0 直接用
-    - EMB_DEVICE=auto：如果 torch.cuda.is_available() True 就 cuda，否则 cpu
-    """
-    if EMB_DEVICE != "auto":
-        return EMB_DEVICE
-
-    try:
-        import torch
-        return "cuda" if torch.cuda.is_available() else "cpu"
-    except Exception:
-        # 没装 torch 或 torch 异常时，退回 cpu
-        return "cpu"
-
-
-def print_device_diagnostics(device: str) -> None:
-    """打印当前环境的 CUDA/GPU 信息，方便你确认是不是 GPU 在跑"""
-    print("[index_bge] ===== Device Check =====")
-    print(f"[index_bge] EMB_DEVICE env = {EMB_DEVICE}")
-    print(f"[index_bge] Using device   = {device}")
-
-    try:
-        import torch
-        print(f"[index_bge] torch.__version__      = {torch.__version__}")
-        print(f"[index_bge] torch.version.cuda    = {torch.version.cuda}")
-        print(f"[index_bge] torch.cuda.is_available() = {torch.cuda.is_available()}")
-        if torch.cuda.is_available():
-            print(f"[index_bge] torch.cuda.device_count() = {torch.cuda.device_count()}")
-            print(f"[index_bge] torch.cuda.get_device_name(0) = {torch.cuda.get_device_name(0)}")
-    except Exception as e:
-        print(f"[index_bge] torch diagnostics unavailable: {e}")
-
-    print("[index_bge] ========================")
-
-
 def main() -> None:
-    # 1) 选择模型和索引
-    model_name, index_name, dims = pick_model_and_index()
-    print(f"[index_bge] ES_URL={ES_URL}")
-    print(f"[index_bge] INDEX_MODEL={INDEX_MODEL}")
-    print(f"[index_bge] model={model_name}")
-    print(f"[index_bge] index={index_name}, dims={dims}")
+    print(f"[index_bm25] LLM_EXPERIMENT={os.environ.get('LLM_EXPERIMENT')}")
+    print(f"[index_bm25] ES_URL={ES_URL}")
+    print(f"[index_bm25] BM25_INDEX={BM25_INDEX}")
+    print(f"[index_bm25] CHUNKS_FILE={CHUNKS_FILE}")
+    print(f"[index_bm25] ES_BULK_SIZE={ES_BULK_SIZE}")
+    print(f"[index_bm25] RECREATE={RECREATE}")
 
-    # 2) 连接 ES
+    # 1) connect ES
     es = Elasticsearch(ES_URL)
     info = es.info()
-    print(f"[index_bge] connected, es_version={info['version']['number']}")
+    print(f"[index_bm25] connected, es_version={info['version']['number']}")
 
-    # 3) 创建 index mapping
-    create_index(es, index_name, dims)
+    # 2) create mapping
+    create_index(es, BM25_INDEX)
 
-    # 4) 确定设备 + 加载 embedding 模型
-    device = pick_device_for_sentence_transformers()
-    print_device_diagnostics(device)
-
-    print("[index_bge] loading embedding model ...")
-    # SentenceTransformer 支持 device 参数（强制在指定设备运行）
-    emb = SentenceTransformer(model_name, device=device)
-
-    # 5) 读取 chunks.jsonl
+    # 3) load chunks
     chunks_path = data_path(CHUNKS_FILE)
     if not chunks_path.exists():
         raise FileNotFoundError(f"chunks 文件不存在：{chunks_path}")
 
-    rows = list(read_jsonl(chunks_path))
-    print(f"[index_bge] loaded chunks: {len(rows)}")
+    rows_raw = list(read_jsonl(chunks_path))
+    print(f"[index_bm25] loaded chunks: {len(rows_raw)}")
 
-    # 6) 分批 embedding + bulk 写入 ES
-    buffer_docs: List[Dict[str, Any]] = []
-    texts_buffer: List[str] = []
-
-    indexed = 0
-    failed = 0
-
-    pbar = tqdm(total=len(rows), desc=f"Indexing({INDEX_MODEL})", ncols=100)
-
-    def flush():
-        nonlocal indexed, failed, buffer_docs, texts_buffer
-        if not buffer_docs:
-            return
-
-        vectors = emb.encode(
-            texts_buffer,
-            batch_size=EMB_BATCH_SIZE,
-            show_progress_bar=False,
-            normalize_embeddings=True,  # cosine 检索推荐 normalize
-        )
-
-        for d, v in zip(buffer_docs, vectors):
-            d["vector"] = v.tolist()
-
-        try:
-            helpers.bulk(es, bulk_actions(index_name, buffer_docs), chunk_size=ES_BULK_SIZE)
-            indexed += len(buffer_docs)
-        except Exception as e:
-            failed += len(buffer_docs)
-            print(f"\n[index_bge] bulk failed: {e}")
-
-        buffer_docs = []
-        texts_buffer = []
-
-    for r in rows:
-        doc = {
-            "chunk_id": r["chunk_id"],
+    # 4) prepare docs (只保留需要的字段，避免写入冗余)
+    rows: List[Dict[str, Any]] = []
+    for r in rows_raw:
+        rows.append({
+            "chunk_id": r.get("chunk_id", ""),
             "doc_id": r.get("doc_id", ""),
             "title": r.get("title", ""),
             "law_group": r.get("law_group", ""),
             "rel_path": r.get("rel_path", ""),
             "source": r.get("source", ""),
             "text": r.get("text", ""),
-            "text_len": int(r.get("text_len", len(r.get("text", "")))),
-        }
+            "text_len": int(r.get("text_len", len(r.get("text", "") or ""))),
+        })
 
-        buffer_docs.append(doc)
-        texts_buffer.append(doc["text"])
+    # 5) bulk index with progress
+    indexed = 0
+    failed = 0
 
-        if len(buffer_docs) >= ES_BULK_SIZE:
+    pbar = tqdm(total=len(rows), desc=f"Indexing(BM25:{BM25_INDEX})", ncols=100)
+
+    buf: List[Dict[str, Any]] = []
+
+    def flush():
+        nonlocal indexed, failed, buf
+        if not buf:
+            return
+        try:
+            helpers.bulk(es, bulk_actions(BM25_INDEX, buf), chunk_size=min(ES_BULK_SIZE, len(buf)))
+            indexed += len(buf)
+        except Exception as e:
+            failed += len(buf)
+            print(f"\n[index_bm25] bulk failed: {e}")
+        buf = []
+
+    for d in rows:
+        # text 为空的跳过
+        if not (d.get("text") or "").strip():
+            pbar.update(1)
+            continue
+
+        buf.append(d)
+        if len(buf) >= ES_BULK_SIZE:
             flush()
-
         pbar.update(1)
 
     flush()
     pbar.close()
 
-    es.indices.refresh(index=index_name)
-    print(f"\n[index_bge] DONE ✅ indexed={indexed}, failed={failed}, index={index_name}")
+    es.indices.refresh(index=BM25_INDEX)
+    print(f"\n[index_bm25] DONE ✅ indexed={indexed}, failed={failed}, index={BM25_INDEX}")
 
 
 if __name__ == "__main__":
