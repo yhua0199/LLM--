@@ -1,0 +1,19 @@
+{
+  "provider": "openai",
+  "pred_file": "rag/answer_rag_Qwen2.5-7B-Instruct_bm10_bg10_rrf20_ctx5.json",
+  "pred_tag": "rag_Qwen2.5-7B-Instruct_bm10_bg10_rrf20_ctx5",
+  "judge_model": "gpt-4o-mini",
+  "judge_tag": "gpt-4o-mini",
+  "num_samples": 50,
+  "num_valid_labels": 50,
+  "num_label_1": 44,
+  "num_parse_fail": 0,
+  "num_api_fail": 0,
+  "accuracy_consistency": 0.88,
+  "time_sec": 39.06528401374817,
+  "api_params": {
+    "temperature": 0.0,
+    "max_tokens": 8,
+    "max_retries": 6
+  }
+}
