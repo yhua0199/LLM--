@@ -1,0 +1,19 @@
+{
+  "provider": "openai",
+  "pred_file": "answer_qwen2.5_7b_lora_fast768_ep1.json",
+  "pred_tag": "qwen2.5_7b_lora_fast768_ep1",
+  "judge_model": "gpt-4o-mini",
+  "judge_tag": "gpt-4o-mini",
+  "num_samples": 500,
+  "num_valid_labels": 500,
+  "num_label_1": 392,
+  "num_parse_fail": 0,
+  "num_api_fail": 0,
+  "accuracy_consistency": 0.784,
+  "time_sec": 378.5098252296448,
+  "api_params": {
+    "temperature": 0.0,
+    "max_tokens": 8,
+    "max_retries": 6
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "provider": "openai",
+  "pred_file": "answer_qwen2.5_7b__dpo_sft_lora_exp1.json",
+  "pred_tag": "qwen2.5_7b__dpo_sft_lora_exp1",
+  "judge_model": "gpt-4o-mini",
+  "judge_tag": "gpt-4o-mini",
+  "num_samples": 500,
+  "num_valid_labels": 500,
+  "num_label_1": 432,
+  "num_parse_fail": 0,
+  "num_api_fail": 0,
+  "accuracy_consistency": 0.864,
+  "time_sec": 486.31737875938416,
+  "api_params": {
+    "temperature": 0.0,
+    "max_tokens": 8,
+    "max_retries": 6
+  }
+}
