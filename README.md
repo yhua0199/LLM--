@@ -23,7 +23,7 @@
 
 ### 1. 意图识别数据集
 
-- 数据路径：`experiments/exp1/data/intent/raw/intent_2k.json`
+- 数据路径：`data/experiments/exp1/intent/raw/intent_2k.json`
 - 数据规模：2000 条
 - 数据来源：基于人工设计与大模型生成的中文用户问题
 
@@ -38,7 +38,7 @@
 
 ### 2. Query 改写测试数据集
 
-- 数据路径：`experiments/exp1/data/rewrite/qa_testset_500.json`
+- 数据路径：`data/experiments/exp1/rewrite/qa_testset_500.json`
 - 数据规模：500 条
 - 数据构成：
   - 200 条来自已有法律问答数据
@@ -118,7 +118,7 @@ Query 改写任务不进行自动化打分，仅对改写结果进行人工观�
 双模型方案下，不同模型规模的意图识别评估结果保存在：
 
 ```text
-experiments/exp1/results/intent/
+output/experiments/exp1/intent/
 ├── metrics_qwen2.5_0.5b.json
 ├── metrics_qwen2.5_1.5b.json
 ├── metrics_qwen2.5_3b.json
@@ -130,26 +130,29 @@ experiments/exp1/results/intent/
 为支持后续实验（exp2/exp3 等），目录统一为实验维度管理，默认使用 `exp1`：
 
 ```text
-experiments/
-├── exp1/
-│   ├── data/
-│   ├── prompts/
-│   └── results/
-└── exp2/
-    ├── data/
-    ├── prompts/
-    └── results/
+data/
+└── experiments/
+    ├── exp1/
+    └── exp2/
+prompts/
+└── experiments/
+    ├── exp1/
+    └── exp2/
+output/
+└── experiments/
+    ├── exp1/
+    └── exp2/
 src/
 ```
 
 ### 运行路径与配置约定
 
-- 默认实验目录：`experiments/exp1`
+- 默认实验目录（逻辑实验名）：`exp1`
 - 指定实验目录：
-  - `LLM_EXPERIMENT=exp2 python src/intent_infer.py`
-  - 或直接指定路径：`LLM_EXPERIMENT_ROOT=/abs/path/to/experiments/exp2 python src/intent_infer.py`
+  - `LLM_EXPERIMENT=exp2 python src/intent/intent_infer.py`
+  - 或直接指定路径：`LLM_DATA_DIR=/abs/path/to/data/experiments/exp2 LLM_PROMPTS_DIR=/abs/path/to/prompts/experiments/exp2 LLM_RESULTS_DIR=/abs/path/to/output/experiments/exp2 python src/intent/intent_infer.py`
 
-所有脚本通过统一的路径配置读取 `data / prompts / results`，因此在不同设备或云端运行时只需要切换环境变量即可。
+所有脚本通过统一的路径配置读取 `data / prompts / output`，因此在不同设备或云端运行时只需要切换环境变量即可。
 
 
 ---
@@ -171,8 +174,8 @@ legal_llm_project/
 │   └── common/
 ├── scripts/
 ├── logs/
-├── outputs/
-├── experiments/
+├── prompts/
+├── output/
 └── README.md
 ```
 
@@ -185,11 +188,11 @@ legal_llm_project/
 - `src/evaluation/`：独立评测脚本。
 - `scripts/`：通用工具脚本（如数据格式转换、训练数据预处理）。
 - `configs/`：集中管理后续环境、模型、检索等配置（已预留）。
-- `data/`、`logs/`、`outputs/`：工程运行期数据、日志与产物目录（已预留）。
+- `data/`、`prompts/`、`output/`、`logs/`：工程运行期输入与产物目录。
 
 ### 迁移原则
 
-1. **保留 `experiments/`**：历史实验数据、Prompt、结果不丢失，便于复现实验结论。
+1. **按类别沉淀到顶层目录**：实验数据、Prompt、结果分别收敛到 `data/experiments`、`prompts/experiments`、`output/experiments`。
 2. **代码按能力归类**：避免继续按 `exp1/exp2/exp3` 划分导致的重复与耦合。
 3. **渐进式收敛**：先完成目录重构，再逐步统一 CLI 入口、配置文件与公共组件。
 
