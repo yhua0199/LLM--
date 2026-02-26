@@ -150,3 +150,51 @@ src/
   - 或直接指定路径：`LLM_EXPERIMENT_ROOT=/abs/path/to/experiments/exp2 python src/intent_infer.py`
 
 所有脚本通过统一的路径配置读取 `data / prompts / results`，因此在不同设备或云端运行时只需要切换环境变量即可。
+
+
+---
+
+## 七、工程化架构迁移（实验架构 -> 工程架构）
+
+当前项目已从按 `expX` 脚本分散组织，迁移为按能力分层组织：
+
+```text
+legal_llm_project/
+├── configs/
+├── data/
+├── src/
+│   ├── intent/
+│   ├── rag/
+│   ├── agent/
+│   ├── llm/
+│   ├── evaluation/
+│   └── common/
+├── scripts/
+├── logs/
+├── outputs/
+├── experiments/
+└── README.md
+```
+
+### 模块说明
+
+- `src/intent/`：意图识别与 Query 改写相关脚本。
+- `src/rag/`：语料构建、检索、索引与 RAG 推理/评估。
+- `src/agent/`：多模块编排与基线推理。
+- `src/llm/`：SFT / DPO / 数据集构建等训练与数据流水线。
+- `src/evaluation/`：独立评测脚本。
+- `scripts/`：通用工具脚本（如数据格式转换、训练数据预处理）。
+- `configs/`：集中管理后续环境、模型、检索等配置（已预留）。
+- `data/`、`logs/`、`outputs/`：工程运行期数据、日志与产物目录（已预留）。
+
+### 迁移原则
+
+1. **保留 `experiments/`**：历史实验数据、Prompt、结果不丢失，便于复现实验结论。
+2. **代码按能力归类**：避免继续按 `exp1/exp2/exp3` 划分导致的重复与耦合。
+3. **渐进式收敛**：先完成目录重构，再逐步统一 CLI 入口、配置文件与公共组件。
+
+### 下一步建议
+
+- 在 `configs/` 增加：`model.yaml`、`rag.yaml`、`runtime.yaml`。
+- 为 `src/*` 每个子模块补充统一 `main()` 入口与参数风格。
+- 新增 `scripts/run_*.sh` 或 `Makefile` 作为标准运行入口。
